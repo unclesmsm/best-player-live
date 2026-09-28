@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مين يستاهل الأفضل — تتبع حي</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --grass-1:#0f3d2e; --grass-2:#144b38; --chalk:#f4f1e6;
+    --gold:#c9a04e; --card:#123a2c; --muted:#9fb3a8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; font-family:'Tajawal',sans-serif; color:var(--chalk);
+    background:radial-gradient(circle at 50% 0%, var(--grass-2), var(--grass-1) 60%);
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:32px 20px 60px;}
+  header{text-align:center;margin-bottom:22px;}
+  .badge{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--gold);
+    border:1px solid var(--gold);border-radius:999px;padding:4px 14px;margin-bottom:12px;}
+  h1{font-size:clamp(26px,7vw,40px);font-weight:900;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:14.5px;max-width:480px;margin:0 auto;}
+  .live-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-left:6px;
+    animation:pulse 1.6s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .updated{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted);margin:14px 0 22px;}
+  .list{display:flex;flex-direction:column;gap:10px;}
+  .player{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:center;
+    background:var(--card);border:1px solid rgba(232,226,208,.1);border-radius:14px;padding:14px 16px;}
+  .player.top{border-color:var(--gold);background:linear-gradient(135deg, rgba(201,160,78,.16), var(--card));}
+  .rank{font-family:'IBM Plex Mono',monospace;color:var(--muted);text-align:center;}
+  .player.top .rank{color:var(--gold);font-weight:700;}
+  .name-block .name{font-weight:700;font-size:16px;}
+  .name-block .club{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .stats{font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:left;direction:ltr;white-space:nowrap;}
+  .stats .g{color:var(--gold);font-weight:600;}
+  .msg{text-align:center;color:var(--muted);padding:30px 10px;font-size:14px;}
+  footer{margin-top:28px;text-align:center;color:var(--muted);font-size:12px;
+    border-top:1px solid rgba(232,226,208,.12);padding-top:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="badge">مباشر<span class="live-dot"></span></span>
+    <h1>مين يستاهل الأفضل؟</h1>
+    <p class="sub">ترتيب حي مبني على أرقام حقيقية (أهداف وتمريرات حاسمة) من دوري أبطال أوروبا — يتحدث كل ما تفتح الصفحة.</p>
+  </header>
+
+  <div class="updated" id="updated">جاري السحب...</div>
+  <div class="list" id="list">
+    <div class="msg">يتم تحميل الأرقام الحية...</div>
+  </div>
+
+  <footer>
+    التقييم = (أهداف × 3) + (تمريرات حاسمة × 2) — مو رسمي من فيفا، بس مؤشر حي مبني على أداء حقيقي.<br>
+    المصدر: football-data.org · يتحدث تلقائياً.
+  </footer>
+</div>
+
+<script>
+async function loadData(){
+  const listEl = document.getElementById('list');
+  const updatedEl = document.getElementById('updated');
+  try{
+    const res = await fetch('/api/scorers');
+    const data = await res.json();
+    if(data.error){
+      listEl.innerHTML = `<div class="msg">تعذر جلب البيانات: ${data.error}</div>`;
+      return;
+    }
+    updatedEl.textContent = 'آخر تحديث: ' + new Date(data.updatedAt).toLocaleString('ar-SA');
+    listEl.innerHTML = data.players.map((p, i) => `
+      <div class="player ${i===0 ? 'top' : ''}">
+        <div class="rank">${i+1}</div>
+        <div class="name-block">
+          <div class="name">${p.name}</div>
+          <div class="club">${p.team}</div>
+        </div>
+        <div class="stats"><span class="g">${p.goals}</span>G · ${p.assists}A · ${p.score} نقطة</div>
+      </div>
+    `).join('');
+  }catch(e){
+    listEl.innerHTML = '<div class="msg">تعذر الاتصال بالخادم.</div>';
+  }
+}
+loadData();
+setInterval(loadData, 5 * 60 * 1000); // يحدث نفسه كل 5 دقائق بدون ما تعيد تحميل الصفحة
+</script>
+</body>
+</html>
